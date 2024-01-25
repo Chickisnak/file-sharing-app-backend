@@ -36,54 +36,63 @@ router.post('/', (req, res) => {
     }
 
     // Upload to Cloudinary
-    cloudinary.uploader.upload_stream({ resource_type: 'image', folder:'shareBackendFiles', 
-      expires_at: Math.round((Date.now() + 5 * 1000) / 1000) },
-      async (error, result) => {
-        if (error) {
-          return res.status(500).send({
-            error: error.message,
+    try {
+      cloudinary.uploader.upload_stream({
+        resource_type: 'image', folder: 'shareBackendFiles',
+        expires_at: Math.round((Date.now() + 5 * 1000) / 1000)
+      },
+        async (error, result) => {
+          if (error) {
+            return res.status(500).send({
+              error: error.message,
+            });
+          }
+
+          const downloadLink = await cloudinary.url(result.public_id, {
+            flags: "attachment",
+          })
+
+          // Store into Database
+          const file = new File({
+            public_id: result.public_id.split('/')[1],
+            filename: req.file.originalname,
+            url: downloadLink,
+            size: result.bytes,
           });
-        }
+          const response = await file.save();
 
-      const downloadLink = await cloudinary.url(result.public_id, {
-        flags: "attachment",
-    })
-
-      // Store into Database
-      const file = new File({
-        public_id: result.public_id.split('/')[1],
-        filename: req.file.originalname,
-        url: downloadLink,
-        size: result.bytes,
-      });
-      const response = await file.save();
-
-      return res.json({
-        file: `${response.url}`,
-      });
-    }).end(req.file.buffer);
+          return res.json({
+            file: `${response.url}`,
+          });
+        }).end(req.file.buffer);
+    } catch (error) {
+      return res.status(501).json({
+        message: 'Something wrong in connecting server.',
+        error: error
+      })
+    }
   });
 });
 
 router.post('/send', async (req, res) => {
   // Rest of your code for sending emails
-  const { public_id , emailTo, emailFrom} = req.body;
+  const { public_id, emailTo, emailFrom } = req.body;
   //validate
-  if(!public_id || !emailTo || !emailFrom){
+  if (!public_id || !emailTo || !emailFrom) {
     return res.status(422).send({
       error: 'All fields are required.'
     })
   }
 
   // Get data from database
-  
-  const file = await File.findOne({ public_id: public_id});
-  if(!file){
+
+  const file = await File.findOne({ public_id: public_id });
+  if (!file) {
     return res.status(422).send({
       error: `File don't exist`,
     })
   }
-  if(file.sender){
+  if (file.sender) {
     return res.status(422).send({
       error: 'Email already sent.'
     })
@@ -102,12 +111,12 @@ router.post('/send', async (req, res) => {
     html: require('../services/emailTemplate')({
       emailFrom: emailFrom,
       downloadLink: `http://localhost:3000/files/shareBackendFiles/${public_id}`,
-      size: parseInt(file.size/1000) + ' KB',
+      size: parseInt(file.size / 1000) + ' KB',
       expires: '24 hours'
     })
   });
 
-  return res.send({success: true})
+  return res.send({ success: true })
 });
 
 module.exports = router;
