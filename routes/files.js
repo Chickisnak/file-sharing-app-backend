@@ -50,6 +50,7 @@ router.post('/', (req, res) => {
 
           const downloadLink = await cloudinary.url(result.public_id, {
             flags: "attachment",
+            secure: true
           })
 
           // Store into Database
@@ -110,7 +111,7 @@ router.post('/send', async (req, res) => {
     text: `${emailFrom} shared a file with you.`,
     html: require('../services/emailTemplate')({
       emailFrom: emailFrom,
-      downloadLink: `http://localhost:3000/files/shareBackendFiles/${public_id}`,
+      downloadLink: `https://file-sharing-app-backend-w39i.onrender.com/files/shareBackendFiles/${public_id}`,
       size: parseInt(file.size / 1000) + ' KB',
       expires: '24 hours'
     })
