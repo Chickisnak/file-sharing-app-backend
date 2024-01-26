@@ -39,7 +39,6 @@ router.post('/', (req, res) => {
     try {
       cloudinary.uploader.upload_stream({
         resource_type: 'image', folder: 'shareBackendFiles',
-        expires_at: Math.round((Date.now() + 5 * 1000) / 1000)
       },
         async (error, result) => {
           if (error) {
