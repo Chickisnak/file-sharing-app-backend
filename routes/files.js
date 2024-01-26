@@ -50,6 +50,7 @@ router.post('/', (req, res) => {
 
           const downloadLink = await cloudinary.url(result.public_id, {
             flags: "attachment",
+            secure: true
           })
 
           // Store into Database
